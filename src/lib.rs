@@ -34,22 +34,34 @@ impl<S: SampleType> AudioQueue<S> {
             }
         }
     }
+
+    pub fn len(&self) -> usize {
+        self.queue[0].len()
+    }
+
+    pub fn receive_interleaved(&mut self, buf: &mut [S]) {
+        for mut ch in buf.chunks_mut(self.queue.len()) {
+            for (mut b, q) in ch.iter_mut().zip(self.queue.iter_mut()) {
+                *b = q.pop_front().unwrap_or_default();
+            }
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    const IN: &[&[u8]] = &[
+        &[1, 2, 3, 4, 5],
+        &[11, 12, 13, 14, 15],
+        &[21, 22, 23, 24, 25],
+        &[31, 32, 33, 34, 35],
+    ];
+
     #[test]
     fn audio_queue() {
         let mut aq = AudioQueue::new(4);
-        let input: &[&[u8]] = &[
-            &[1, 2, 3, 4, 5],
-            &[11, 12, 13, 14, 15],
-            &[21, 22, 23, 24, 25],
-            &[31, 32, 33, 34, 35],
-        ];
-
-        aq.send(input);
+        aq.send(IN);
 
         println!("{:?}", aq);
 
@@ -68,5 +80,18 @@ mod tests {
         aq.receive(out);
 
         assert_eq!(out, &[&[5, 0], &[15, 0], &[25, 0], &[35, 0]]);
+    }
+
+    #[test]
+    fn audio_queue_interleave() {
+        let mut aq = AudioQueue::new(4);
+        let out: &mut [u8] = &mut [0; 8];
+        aq.send(IN);
+
+        println!("{:?}", aq);
+
+        aq.receive_interleaved(out);
+
+        assert_eq!(out, &[1, 11, 21, 31, 2, 12, 22, 32]);
     }
 }
