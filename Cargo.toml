@@ -1,0 +1,8 @@
+[package]
+name = "av-audio"
+version = "0.1.0"
+authors = ["Luca Barbato <lu_zero@gentoo.org>"]
+description = "Audio-related utilities"
+
+[dependencies]
+av-data = { version = "0.1.0", path = "../rust-av/data" }
