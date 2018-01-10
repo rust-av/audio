@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-pub trait SampleType: Copy {}
+pub trait SampleType: Copy + Default {}
 
 impl SampleType for u8 {}
 impl SampleType for i16 {}
@@ -29,8 +29,8 @@ impl<S: SampleType> AudioQueue<S> {
     pub fn receive(&mut self, buf: &mut [&mut [S]]) {
         assert_eq!(buf.len(), self.queue.len());
         for (mut b, q) in buf.iter_mut().zip(&mut self.queue) {
-            for (v, d) in q.iter().zip(b.iter_mut()) {
-                *d = *v;
+            for d in b.iter_mut() {
+                *d = q.pop_front().unwrap_or_default();
             }
         }
     }
@@ -43,10 +43,10 @@ mod tests {
     fn audio_queue() {
         let mut aq = AudioQueue::new(4);
         let input: &[&[u8]] = &[
-            &[1, 2, 3, 4],
-            &[11, 12, 13, 14],
-            &[21, 22, 23, 24],
-            &[31, 32, 33, 34],
+            &[1, 2, 3, 4, 5],
+            &[11, 12, 13, 14, 15],
+            &[21, 22, 23, 24, 25],
+            &[31, 32, 33, 34, 35],
         ];
 
         aq.send(input);
@@ -60,5 +60,13 @@ mod tests {
         println!("{:?} {:?}", aq, out);
 
         assert_eq!(out, &[&[1, 2], &[11, 12], &[21, 22], &[31, 32]]);
+
+        aq.receive(out);
+
+        assert_eq!(out, &[&[3, 4], &[13, 14], &[23, 24], &[33, 34]]);
+
+        aq.receive(out);
+
+        assert_eq!(out, &[&[5, 0], &[15, 0], &[25, 0], &[35, 0]]);
     }
 }
