@@ -39,6 +39,19 @@ impl<S: SampleType> AudioQueue<S> {
         self.queue[0].len()
     }
 
+    pub fn clear(&mut self) {
+        self.queue.iter_mut().for_each(|q| q.clear());
+    }
+
+    pub fn send_interleaved(&mut self, buf: &[S]) {
+        assert_eq!(buf.len() % self.queue.len(), 0);
+        for ch in buf.chunks(self.queue.len()) {
+            for (&b, mut q) in ch.iter().zip(self.queue.iter_mut()) {
+                q.push_back(b);
+            }
+        }
+    }
+
     pub fn receive_interleaved(&mut self, buf: &mut [S]) {
         for mut ch in buf.chunks_mut(self.queue.len()) {
             for (mut b, q) in ch.iter_mut().zip(self.queue.iter_mut()) {
@@ -87,6 +100,16 @@ mod tests {
         let mut aq = AudioQueue::new(4);
         let out: &mut [u8] = &mut [0; 8];
         aq.send(IN);
+
+        println!("{:?}", aq);
+
+        aq.receive_interleaved(out);
+
+        assert_eq!(out, &[1, 11, 21, 31, 2, 12, 22, 32]);
+
+        aq.clear();
+
+        aq.send_interleaved(out);
 
         println!("{:?}", aq);
 
