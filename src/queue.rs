@@ -1,10 +1,5 @@
 use std::collections::VecDeque;
-
-pub trait SampleType: Copy + Default {}
-
-impl SampleType for u8 {}
-impl SampleType for i16 {}
-impl SampleType for f32 {}
+use sample::*;
 
 // TODO make it const-generic over channels once it lands
 #[derive(Debug)]
